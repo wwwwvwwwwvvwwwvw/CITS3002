@@ -1,0 +1,43 @@
+{"id": "j0", "question": "In Java, the '==' operator can be used to compare two String objects.", "type": "true-or-false", "answer": "False"}
+{"id": "j1", "question": "Java supports multiple inheritance.", "type": "true-or-false", "answer": "False"}
+{"id": "j2", "question": "Java is a case-sensitive programming language.", "type": "true-or-false", "answer": "True"}
+{"id": "j3", "question": "The 'final' keyword in Java is used to indicate that a variable cannot be modified.", "type": "true-or-false", "answer": "True"}
+{"id": "j4", "question": "Java uses a garbage collector to automatically free unused memory.", "type": "true-or-false", "answer": "True"}
+{"id": "j5", "question": "Java supports pass-by-reference for method arguments.", "type": "true-or-false", "answer": "False"}
+{"id": "j6", "question": "A Java interface can have method implementations.", "type": "true-or-false", "answer": "False"}
+{"id": "j7", "question": "Java arrays are always dynamically resized.", "type": "true-or-false", "answer": "False"}
+{"id": "j8", "question": "The 'super' keyword in Java is used to refer to the immediate subclass of a class.", "type": "true-or-false", "answer": "False"}
+{"id": "j9", "question": "Java supports operator overloading.", "type": "true-or-false", "answer": "False"}
+{"id": "j10", "question": "Write Java class called Main that prints it's arguments to the console line by line.", "type": "code", "answer": "class Main {\n\tpublic static void main(String[] args) {\n\t\t// loop through all arguments\n\t\tfor(String str: args) {\n\t\t\tSystem.out.println(str);\n\t\t}\n\t}\n}", "tests": [{"parameters": ["hello", "world"], "output": "hello\nworld\n"}]}
+{"id": "j11", "question": "What is the extension of compiled java classes?: .txt,.js,.class,.java", "type": "multi", "answer": ".class"}
+{"id": "j12", "question": "Who invented Java Programming?:Guido van Rossum,James Gosling,Dennis Ritchie,Bjarne Stroustrup", "type": "multi", "answer": "James Gosling"}
+{"id": "j13", "question": "Which statement is true about Java?:Java is a sequence-dependent programming language,Java is a code dependent programming language,Java is a platform-dependent programming language,Java is a platform-independent programming language", "type": "multi", "answer": "Java is a platform-independent programming language"}
+{"id": "j14", "question": "Which component is used to compile, debug and execute the java programs?:JRE,JIT,JDK,JVM", "type": "multi", "answer": "JDK"}
+{"id": "j15", "question": "Which one of the following is not a Java feature?:Object-oriented,Use of pointers,Portable,Dynamic and Extensible", "type": "multi", "answer": "Use of pointers"}
+{"id": "j16", "question": "Which of these cannot be used for a variable name in Java?:identifier & keyword,identifier,keyword,none of the mentioned", "type": "multi", "answer": "keyword"}
+{"id": "j17", "question": "What is the extension of java code files?:.js,.txt,.class,.java", "type": "multi", "answer": ".java"}
+{"id": "j18", "question": "Which of the following is not an OOPS concept in Java?:Polymorphism,Inheritance,Compilation,Encapsulation", "type": "multi", "answer": "Compilation"}
+{"id": "j19", "question": "What is not the use of “this” keyword in Java?:Referring to the instance variable when a local variable has the same name,Passing itself to the method of the same class,Passing itself to another method,Calling another constructor in constructor chaining", "type": "multi", "answer": "Passing itself to the method of the same class"}
+{"id": "j20", "question": "Which exception is thrown when java is out of memory?:MemoryError,OutOfMemoryError,MemoryOutOfBoundsException,MemoryFullException", "type": "multi", "answer": "OutOfMemoryError"}
+{"id": "j21", "question": "What is the extension of compiled java classes?:.txt,.js,.class,.java", "type": "multi", "answer": ".class"}
+{"id": "j22", "question": "Which of these are selection statements in Java?:break,continue,for(),if()", "type": "multi", "answer": "if()"}
+{"id": "j23", "question": "Which of these keywords is used to define interfaces in Java?:intf,Intf,interface,Interface", "type": "multi", "answer": "interface"}
+{"id": "j24", "question": "What will be the output of the following Java program?\nclass output \n{\n    public static void main(String args[])\n    { \n       StringBuffer s1 = new StringBuffer(\"Quiz\");\n       StringBuffer s2 = s1.reverse();\n       System.out.println(s2);\n    }\n}\na) QuizziuQ\nb) ziuQQuiz\nc) Quiz\nd) ziuQ", "type": "multi", "answer": "ziuQ"}
+{"id": "j25", "question": "What will be the output of the following Java code?\nclass output \n{\n    public static void main(String args[])\n    { \n       String c = \"Hello i love java\";\n       boolean var;\n       var = c.startsWith(\"hello\");\n       System.out.println(var);\n    }\n}\na) 0\nb) true\nc) 1\nd) false", "type": "multi", "answer": "false"}
+{"id": "j26", "question": "What will be the output of the following Java code?\nclass Output \n{\n    public static void main(String args[]) \n    {\n        Integer i = new Integer(257);  \n        byte x = i.byteValue();\n        System.out.print(x);\n    }\n}\na) 257\nb) 256\nc) 1\nd) 0", "type": "multi", "answer": "1"}
+{"id": "j27", "question": "Which of the following is a superclass of every class in Java?\na) ArrayList\nb) Abstract class\nc) Object class\nd) String", "type": "multi", "answer": "Object class"}
+{"id": "j28", "question": "Java is an object-oriented programming language.", "type": "true-or-false", "answer": "True"}
+{"id": "j29", "question": "Which of the following is NOT a valid loop in Java?: for,while,until,do-while", "type": "multi",  "answer": "until"}
+{"id": "j30", "question": "Java supports multiple threads and concurrent programming.", "type": "true-or-false", "answer": "True"}
+{"id": "j31", "question": "The 'this' keyword in Java refers to the current class instance.", "type": "true-or-false", "answer": "True"}
+{"id": "j32", "question": "Which of the following is NOT a valid keyword in Java?: class,interface,extends,function", "type": "multi", "answer": "function"}
+{"id": "j33", "question": "Java supports multiple threads and concurrent programming.", "type": "true-or-false", "answer": "True"}
+{"id": "j34", "question": "Which of the following is NOT a primitive data type in Java?: int, boolean,String,float", "type": "multi", "answer": "String"}
+{"id": "j35", "question": "Which keyword is used to define a constant variable in Java?: const,final,static,var", "type": "multi", "answer": "final"}
+{"id": "j36", "question": "What is the result of the expression '5 % 2' in Java?:2,2.5,1,1.5", "type": "multi", "answer": "1"}
+{"id": "j37", "question": "Which of the following data types is used to store whole numbers in Java?: int,double,String,boolean", "type": "multi", "answer": "int"}
+{"id": "j38", "question": "Which of the following is an example of a logical operator in Java?: +,-,*,&&", "type": "multi", "answer": "&&"}
+{"id": "j39", "question": "What is the default value of an uninitialized boolean variable in Java?: true,false,null,0", "type": "multi", "answer": "false"}
+{"id": "j40", "question": "Which statement is used to exit a loop prematurely in Java?: continue,break,return,exit", "type": "multi","answer": "break"}
+{"id": "j41", "question": "What is the correct syntax to declare a variable called 'count' of type int in Java?:int count,count int;,variable count,declare count as int", "type": "multi", "answer": "int count;"}
+
