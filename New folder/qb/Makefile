@@ -1,15 +1,19 @@
 JAVAC = javac
+JAVA_FLAGS = -cp
 JAVA = java
-SRC = QuestionBank.java
-MAIN_CLASS = QuestionBank
+JAVA_SOURCE = QuestionBank.java
+JAVA_CLASS = QuestionBank
 
-all: $(MAIN_CLASS)
+all: compile
 
-$(MAIN_CLASS): $(SRC)
-	$(JAVAC) $(SRC)
+compile:
+	$(JAVAC) $(JAVA_FLAGS) . $(JAVA_SOURCE)
 
-run: $(MAIN_CLASS)
-	$(JAVA) $(MAIN_CLASS)
+run-python:
+	$(JAVA) $(JAVA_FLAGS) . $(JAVA_CLASS) python
+
+run-java:
+	$(JAVA) $(JAVA_FLAGS) . $(JAVA_CLASS) java
 
 clean:
 	rm -f *.class
