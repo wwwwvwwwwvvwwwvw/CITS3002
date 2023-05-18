@@ -1,3 +1,5 @@
+Before running the QuestionBank application, make sure the TestManager application is running and ready to receive data.
+
 To compile the Java source file and generate the QuestionBank class:
 
 ```
