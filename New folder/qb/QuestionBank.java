@@ -100,42 +100,49 @@ class Question {
     public String question;
     public String type;
     public String answer;
+    public String bytes;
     public List<Test> tests;
 
-    public Question(String id, String question, String type, String answer, List<Test> tests) {
+    public Question(String id, String question, String type, String answer, List<Test> tests, String bytes) {
         this.id = id;
         this.question = question;
         this.type = type;
         this.answer = answer;
         this.tests = tests;
+        this.bytes = bytes;
     }
 
     public String toJson() {
-        return "{\"id\":\"" + id + "\",\"question\":\"" + question + "\",\"type\":\"" + type + "\"}";
+        return "{\"id\":\"" + id + "\",\"question\":\"" + question.replaceAll("\"", "\\\\\"") + "\",\"type\":\"" + type
+                + "\"}";
     }
 
     public static Question fromJson(String json) {
-        System.out.println(json);
         String id = getValue(json, "id");
         String question = getValue(json, "question");
         String type = getValue(json, "type");
         String answer = getValue(json, "answer");
+        String bytes = getValue(json, "bytes");
         List<Test> tests = getTestsFromJson(json);
-        return new Question(id, question, type, answer, tests);
+        return new Question(id, question, type, answer, tests, bytes);
     }
 
     private static String getValue(String json, String key) {
         String keyWithQuotes = "\"" + key + "\": \"";
         int start = json.indexOf(keyWithQuotes) + keyWithQuotes.length();
+
         int end = json.indexOf("\"", start);
-        return json.substring(start, end);
+        while (json.charAt(end - 1) == '\\') {
+            end = json.indexOf("\"", end + 1);
+        }
+        return json.substring(start, end).replaceAll("\\\\\"", "\"");
     }
 
     private static List<Test> getTestsFromJson(String json) {
         List<Test> tests = new ArrayList<>();
         int start = json.indexOf("\"tests\":") + "\"tests\": [".length();
         int end = json.lastIndexOf("]");
-        if (start >= 0 && end >= 0) {
+        if (start >= "\"tests\": [".length() && end >= 0) {
             String testsJson = json.substring(start, end);
             while (testsJson.contains("{")) {
                 int testStart = testsJson.indexOf("{");
@@ -213,9 +220,14 @@ class MarkMessage {
     }
 
     private static String getValue(String json, String key) {
-        int start = json.indexOf("\"" + key + "\": \"") + key.length() + 5;
+        String keyWithQuotes = "\"" + key + "\": \"";
+        int start = json.indexOf(keyWithQuotes) + keyWithQuotes.length();
+
         int end = json.indexOf("\"", start);
-        return json.substring(start, end);
+        while (json.charAt(end - 1) == '\\') {
+            end = json.indexOf("\"", end + 1);
+        }
+        return json.substring(start, end).replaceAll("\\\\\"", "\"");
     }
 }
 
@@ -312,25 +324,47 @@ public class QuestionBank {
 
     public static List<Question> getRandomQuestions(String filename) throws IOException {
         List<Question> questions = new ArrayList<>();
+        List<Question> true_false_questions = new ArrayList<>();
+        List<Question> multi_questions = new ArrayList<>();
+        List<Question> code_questions = new ArrayList<>();
+        List<Question> image_questions = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filename + ".txt"))) {
-            List<String> lines = new ArrayList<>();
             String line;
 
             // Read all lines from file
             while ((line = reader.readLine()) != null) {
-                lines.add(line);
-            }
-
-            // Shuffle lines randomly
-            Random rand = new Random();
-            for (int i = 0; i < NUM_QUESTIONS; i++) {
-                int randomIndex = rand.nextInt(lines.size());
-                String randomLine = lines.get(randomIndex);
-                questions.add(Question.fromJson(randomLine));
-                lines.remove(randomIndex); // Remove line to avoid duplicate selection
+                Question question = Question.fromJson(line);
+                if (question.type.equals("true-or-false")) {
+                    true_false_questions.add(question);
+                } else if (question.type.equals("multi")) {
+                    multi_questions.add(question);
+                } else if (question.type.equals("code")) {
+                    code_questions.add(question);
+                } else if (question.type.equals("image")) {
+                    image_questions.add(question);
+                }
             }
         }
+        // Add 1 true or false, 1 multi, 1 image and 2 code questions
+        Random random = new Random();
+        questions.add(true_false_questions.get(random.nextInt(true_false_questions.size())));
+
+        int index = random.nextInt(multi_questions.size());
+        questions.add(multi_questions.get(index));
+        multi_questions.remove(index);
+
+        index = random.nextInt(multi_questions.size());
+        questions.add(multi_questions.get(index));
+
+        index = random.nextInt(code_questions.size());
+        questions.add(code_questions.get(index));
+        code_questions.remove(index);
+
+        index = random.nextInt(code_questions.size());
+        questions.add(code_questions.get(index));
+
+        questions.add(image_questions.get(random.nextInt(image_questions.size())));
         return questions;
     }
 
@@ -400,8 +434,9 @@ public class QuestionBank {
                                         System.out.println(
                                                 "An error occurred while deleting the directory: " + e.getMessage());
                                     }
-                                    return new MarkedMessage(mark_msg.id, mark_msg.user, mark_msg.answer, false,
-                                            question.answer);
+                                    return new MarkedMessage(mark_msg.id, mark_msg.user,
+                                            mark_msg.answer.replaceAll("\"", "\\\\\""), false,
+                                            question.answer.replaceAll("\"", "\\\\\""));
                                 }
 
                                 BufferedReader reader2 = new BufferedReader(
@@ -441,10 +476,7 @@ public class QuestionBank {
                                 System.out.println("An error occurred while writing to the file: " + e.getMessage());
                             }
 
-                            System.out.println(python_file.toString());
-
                             // Run python code
-                            System.out.println(question.tests.size());
                             boolean passed = run_tests(question.tests, path, "python", "main.py");
                             if (!passed) {
                                 failed = true;
@@ -460,15 +492,20 @@ public class QuestionBank {
                         }
                         // Passed tests so return the 'correct' MarkedMessage
                         System.out.println("Tests passed.");
-                        return new MarkedMessage(mark_msg.id, mark_msg.user, mark_msg.answer, !failed, question.answer);
+                        return new MarkedMessage(mark_msg.id, mark_msg.user, mark_msg.answer.replaceAll("\"", "\\\\\""),
+                                !failed, question.answer.replaceAll("\"", "\\\\\""));
+                    } else if (question.type.equals("image")) {
+                        return new MarkedMessage(mark_msg.id, mark_msg.user, mark_msg.answer.replaceAll("\"", "\\\\\""),
+                                mark_msg.answer.equals(question.bytes), question.answer.replaceAll("\"", "\\\\\""));
                     } else if (question.id.equals(mark_msg.id)) {
-                        return new MarkedMessage(mark_msg.id, mark_msg.user, mark_msg.answer,
-                                mark_msg.answer.equals(question.answer), question.answer);
+                        return new MarkedMessage(mark_msg.id, mark_msg.user, mark_msg.answer.replaceAll("\"", "\\\\\""),
+                                mark_msg.answer.equals(question.answer), question.answer.replaceAll("\"", "\\\\\""));
                     }
                 }
             }
         }
-        return new MarkedMessage(mark_msg.id, mark_msg.user, mark_msg.answer, false, "Could not find question");
+        return new MarkedMessage(mark_msg.id, mark_msg.user, mark_msg.answer.replaceAll("\"", "\\\\\""), false,
+                "Could not find question");
     }
 
     private static boolean run_tests(List<Test> tests, Path path, String... run_args) {
