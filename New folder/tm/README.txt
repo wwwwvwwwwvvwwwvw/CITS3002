@@ -8,3 +8,4 @@ Instructions for executing the tm application:
    python TestManager.py
 
 5. Go to localhost:3002 on your browser.
+6. Use the credential stored in user.txt (Username: user / Password: pass).
