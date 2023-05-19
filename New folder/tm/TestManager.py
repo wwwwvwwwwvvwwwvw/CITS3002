@@ -7,6 +7,8 @@ import socket
 import os
 import random
 import json
+import cgi
+import base64
 from threading import Event
 
 # BELOW IS JUST TO ENABLE REUSE TERMINAL ON CTRL-C PRESS
@@ -61,8 +63,10 @@ TCP_PORT = 30020
 MARKED_EVENT = Event()
 MARKED_LIST = []
 
+
 class ThreadedHTTPHandler(socketserver.ThreadingMixIn, http.server.HTTPServer):
     pass
+
 
 class HTTPHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -85,12 +89,14 @@ class HTTPHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         login_form = LOGIN_FORM
         self.wfile.write(login_form.encode())
-    
+
     def _handle_logout(self):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         # unset the 'username' cookie by setting its expiration date to a date in the past
-        self.send_header('Set-Cookie', 'username=; expires=Thu, 01 Jan 1970 00:00:00 GMT')
+        self.send_header(
+            "Set-Cookie", "username=; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+        )
         self.end_headers()
 
         response = f"""
@@ -113,12 +119,12 @@ class HTTPHandler(http.server.BaseHTTPRequestHandler):
         if not user:
             # user is not logged in, redirect to login page
             self.send_response(302)
-            self.send_header('Location', '/')
+            self.send_header("Location", "/")
             self.end_headers()
         else:
             # user is logged in, send homepage response
             self.send_response(200)
-            self.send_header('Content-type', 'text/html')
+            self.send_header("Content-type", "text/html")
             self.end_headers()
             self._send_logged_in_response(user)
 
@@ -129,8 +135,7 @@ class HTTPHandler(http.server.BaseHTTPRequestHandler):
             self.send_header("Location", "http://localhost:3002/")
             self.end_headers()
             return None
-        
-  
+
         query = urllib.parse.urlparse(self.path).query
         query_dict = urllib.parse.parse_qs(query)
 
@@ -176,7 +181,7 @@ class HTTPHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(302)
             self.send_header("Content-type", "text/html")
             self.send_header("Set-Cookie", f"username={username}")
-            self.send_header('Location', '/home')
+            self.send_header("Location", "/home")
             self.end_headers()
         else:
             # Send login form with error message
@@ -231,31 +236,30 @@ class HTTPHandler(http.server.BaseHTTPRequestHandler):
         else:
             marks = countMarks(user_questions)
             for question in user_questions:
-                if(question["correct"] == True or question["attempts"] == 3):
+                if question["correct"] == True or question["attempts"] == 3:
                     test_completed = True
                 else:
                     test_completed = False
                     break
 
             for question in user_questions:
-                if(question["attempts"] > 0):
+                if question["attempts"] > 0:
                     test_started = True
                     break
-            
+
             for i, question in enumerate(user_questions):
-                if(question["attempts"] < 3 and question["correct"] == False):
+                if question["attempts"] < 3 and question["correct"] == False:
                     first_unfinished_question = i + 1
                     break
-        
-        
+
         ## NEED TO CHANGE TO 2 AT END - SET TO 1 FOR DEVELOPMENT
         if len(QUESTION_BANKS) < 1:
             response = """<p>Not enough question banks connected</p>"""
-        elif (test_completed):
+        elif test_completed:
             response = f"""<p>You have finished this test already with a score of {marks}/{len(user_questions) * 3}</p>
                 <a href='/test?q=1'>Review Answers</a>
             """
-        elif (test_started):
+        elif test_started:
             response = f"""<p><a href='/test?q={first_unfinished_question}'>Continue Test</a></p>"""
         else:
             response = """<p><a href='/test?q=1'>Start Test</a></p>"""
@@ -272,25 +276,37 @@ class HTTPHandler(http.server.BaseHTTPRequestHandler):
                     </body>
                 </html>     
         """
-        
 
         self.wfile.write(response.encode())
 
     def do_POST(self):
         content_length = int(self.headers["Content-Length"])
-        post_data = self.rfile.read(content_length)
-        params = urllib.parse.parse_qs(post_data.decode("utf-8"))
-
         answer = ""
-        # check for forms using the /submit-answers action
-        if self.path == "/test":
-            for key, value in params.items():
-                if key == "question_number":
-                    question_number = value[0]
-                elif key == "question_id":
-                    question_id = value[0]
-                elif key == "answer":
-                    answer = value[0]
+        if self.path == "/upload":
+            form = cgi.FieldStorage(
+                fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD": "POST"}
+            )
+
+            file_item = form["bytes"]
+            image_data = file_item.file.read()
+            encoded_image = base64.b64encode(image_data)
+            answer = encoded_image.decode("utf-8")
+            question_id = form["question_id"].value
+            question_number = form["question_number"].value
+
+        else:
+            post_data = self.rfile.read(content_length)
+            params = urllib.parse.parse_qs(post_data.decode("utf-8"))
+
+            # check for forms using the /submit-answers action
+            if self.path == "/test":
+                for key, value in params.items():
+                    if key == "question_number":
+                        question_number = value[0]
+                    elif key == "question_id":
+                        question_id = value[0]
+                    elif key == "answer":
+                        answer = value[0]
 
         # #THIS WILL SEND ALL ANSWERS MIGHT ONLY NEED TO SEND RELEVANT
         destination_qb = ""
@@ -316,6 +332,7 @@ class HTTPHandler(http.server.BaseHTTPRequestHandler):
                     )
                     + "\n"
                 )
+                print("Sent:", data)
                 send_data_to_question_bank(qb["address"], qb["port"], data)
                 # If username has not been marked then wait for a marked event
                 while username not in MARKED_LIST:
@@ -339,8 +356,14 @@ class TCPHandler(threading.Thread):
             while True:
                 conn, addr = self.tcp_socket.accept()
                 with conn:
-                    data = conn.recv(1024).decode("utf-8")
-                    print(data)
+                    data = b""
+                    while True:
+                        chunk = conn.recv(1024)
+                        data += chunk
+                        if b"\n" in chunk:
+                            break
+                    data = data.decode("utf-8")
+                    print("Recieved:", data)
 
                     message = json.loads(data)
                     msg_type = message["type"]
@@ -355,7 +378,6 @@ class TCPHandler(threading.Thread):
                             }
                         )
                     elif msg_type == "QUESTIONS":
-                        print(msg_content)
                         for question in msg_content["questions"]:
                             question["attempts"] = 0
                             question["correct"] = False
@@ -384,7 +406,7 @@ class TCPHandler(threading.Thread):
 
 def create_question_form(questions, question_num):
     question = questions[question_num - 1]
-    question_links = ''
+    question_links = ""
     for i in range(len(questions)):
         question_links = question_links + f' <a href="/test?q={i + 1}">{i+1}</a> '
     if question_num == 1:
@@ -401,6 +423,12 @@ def create_question_form(questions, question_num):
     if current_attempts >= 1 and current_attempts < 3 and not question["correct"]:
         feedback = f"You've gotten this answer incorrect. You have {3 - current_attempts} attempts remaining. Please try again."
 
+    form_format = """<form action="/test" method="post">"""
+    if question["type"] == "image":
+        form_format = (
+            """<form action="/upload" enctype="multipart/form-data" method="post">"""
+        )
+
     form = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -414,7 +442,7 @@ def create_question_form(questions, question_num):
             <div>attempts: {current_attempts}</div>
             <div>marks: {countMarks(questions)}/{len(questions) * 3}</div>
             <div>{feedback}</div>
-            <form action="/test" method="post">
+            {form_format}
             <input type="hidden" name="question_number" value="{question_num}">
             <input type="hidden" name="question_id" value="{question["id"]}">
             <input type="hidden" name="attmepts" value="{question["attempts"]}">
@@ -484,11 +512,10 @@ def create_question_form(questions, question_num):
                 {sample_code}
         </div>"""
         )
-    
+
     elif question["type"] == "multi":
         options = question["question"].split(":")[1].split(",")
         options_form = ""
-
 
         correct_answer = ""
         disabled = ""
@@ -504,11 +531,14 @@ def create_question_form(questions, question_num):
             checked = ""
             if option == last_answer:
                 checked = "checked"
-            options_form = options_form + f'''
+            options_form = (
+                options_form
+                + f"""
                 <input type="radio" name="answer" value="{option}" {disabled} {checked}>
                 <label for="html" {disabled}>{option}</label>
                 <br>
-            '''
+            """
+            )
 
         form = (
             form
@@ -517,6 +547,35 @@ def create_question_form(questions, question_num):
             <p>{question["question"].split(":")[0]}</p>
                 {options_form}
             {correct_answer}
+        </div>"""
+        )
+    elif question["type"] == "image":
+        options = question["question"].split("#")[1].split(",")
+        options_form = ""
+        correct_answer = ""
+        disabled = ""
+
+        if current_attempts >= 3 or question["correct"]:
+            disabled = "disabled"
+            correct_answer = question.get("correct-answer", "")
+
+        for option in options:
+            options_form = (
+                options_form
+                + f"""
+                <a href={option}><img src="{option}"></img></a>
+                <br>
+            """
+            )
+        form = (
+            form
+            + f"""
+        <div>
+            <p>{question["question"].split("#")[0]}</p>
+                {options_form}
+                <label for="html">Upload correct image:</label>
+                <input type="file" name="bytes" {disabled} accept="image/*">
+            <img url="{correct_answer}"></img>
         </div>"""
         )
 
@@ -609,7 +668,7 @@ def start_server():
     tcp_handler.start()
 
     # Start the HTTP server
-    http_server = ThreadedHTTPHandler(('localhost', HTTP_PORT), HTTPHandler)
+    http_server = ThreadedHTTPHandler(("localhost", HTTP_PORT), HTTPHandler)
     print(f"Serving at port {HTTP_PORT}")
     http_server.serve_forever()
 
